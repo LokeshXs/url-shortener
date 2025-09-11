@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+
 	"github.com/Lokeshxs/url-shortener/model"
 	"github.com/Lokeshxs/url-shortener/utils"
 	"github.com/gin-gonic/gin"
@@ -19,19 +20,25 @@ func RoutingHandler(server *gin.Engine) {
 
 		err := c.ShouldBindJSON(&url)
 
-		if err != nil {
+		if err != nil || len(url.LongURL) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "Long URL is missing",
 			})
 		}
 
-		// Call a function to shorten the URL
-
+		// Calling a function to shorten the URL
 		domain := c.Request.Host
 
-		fmt.Println(domain)
+		err = url.ShortenURL(domain)
 
-		url.ShortenURL(domain)
+		if err != nil {
+
+			fmt.Println(err);
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Failed to generate short url. Try again!",
+			})
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"message":   "Short url created successfully",
@@ -40,31 +47,28 @@ func RoutingHandler(server *gin.Engine) {
 
 	})
 
-
 	// URL Redirect Endpoint
-	server.GET("/u/:code",func(c *gin.Context){
+	server.GET("/u/:code", func(c *gin.Context) {
 
 		// Extracting the short code
-		shortCode := c.Param("code");
+		shortCode := c.Param("code")
 
 		// checking if the short code is empty or not of required length
-		if(shortCode == "" || len(shortCode) != utils.SHORT_CODE_LENGTH){
-			c.JSON(http.StatusBadRequest,gin.H{
-				"message":"Invalid short url",
+		if shortCode == "" || len(shortCode) != utils.SHORT_CODE_LENGTH {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Invalid short url",
 			})
 
-			return;
+			return
 		}
 
-		// Get the long url from DB for the short code and incase the url is not found send 404 
-		long_url := "https://www.youtube.com/watch?v=2HZmWnMWU-A";
-
+		// Get the long url from DB for the short code and incase the url is not found send 404
+		long_url := "https://www.youtube.com/watch?v=2HZmWnMWU-A"
 
 		// Send the long url redirect response
 
-		c.Redirect(http.StatusMovedPermanently,long_url)
+		c.Redirect(http.StatusMovedPermanently, long_url)
 
 	})
-
 
 }
