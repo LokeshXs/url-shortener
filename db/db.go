@@ -48,7 +48,7 @@ func createTables() error{
 	// users table
 	usersTableQuery := 	`
 	CREATE TABLE IF NOT EXISTS users (
-	id SERIAL PRIMARY KEY,
+	id TEXT PRIMARY KEY,
 	name TEXT,
 	email TEXT UNIQUE NOT NULL,
 	created_at TIMESTAMPTZ DEFAULT NOW()
@@ -67,8 +67,10 @@ func createTables() error{
 	id SERIAL PRIMARY KEY,
 	original_url TEXT NOT NULL,
 	shortcode VARCHAR(10) UNIQUE NOT NULL, 
+	clicks INT DEFAULT(0),
+	expired_at TIMESTAMPTZ,
 	created_at TIMESTAMPTZ DEFAULT NOW(),
-	user_id INT REFERENCES users(id) ON DELETE CASCADE
+	user_id TEXT REFERENCES users(id) ON DELETE CASCADE
 	);
 	`
 
