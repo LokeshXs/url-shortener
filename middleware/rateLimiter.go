@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
+ 
 	"github.com/Lokeshxs/url-shortener/utils"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +29,7 @@ func RateLimiter(c *gin.Context) {
 	// Locking the mutex
 	mu.Lock()
 
-	// defering the unlock whenever the func execution finishes
+	// defering the unlock whenever the func execution finipshes
 	defer mu.Unlock()
 
 

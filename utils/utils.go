@@ -1,20 +1,39 @@
 package utils
 
-import "math/rand"
+import (
 
+	"math/rand"
 
-func GenerateShortCode(length int16) string{
+	"github.com/gin-gonic/gin"
+)
 
-	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+func GenerateShortCode(length int16) string {
 
-	bytesSlice := make([]byte,length);
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	for i := range bytesSlice{
+	bytesSlice := make([]byte, length)
 
+	for i := range bytesSlice {
 
-		bytesSlice[i] = charset[rand.Intn(len(charset))];
+		bytesSlice[i] = charset[rand.Intn(len(charset))]
 	}
 
-	return string(bytesSlice);
-	
+	return string(bytesSlice)
+
+}
+
+func GetBaseURL(c *gin.Context) string {
+	// scheme := "http"
+	// host := c.Request.Header.Get("X-Forwarded-Host")
+	// if host == "" {
+
+	// 	if c.Request.TLS != nil {
+	// 		scheme = "https"
+	// 	}
+	// 	host = c.Request.Host
+	// }
+
+	// baseURL := fmt.Sprintf("%s://%s", scheme, host)
+
+	return SHORTEN_BASE_URL
 }

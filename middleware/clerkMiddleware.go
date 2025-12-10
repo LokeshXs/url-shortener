@@ -1,17 +1,19 @@
 package middleware
-
+	
 import (
 	"net/http"
-	"os"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
+	
 	"github.com/gin-gonic/gin"
 )
 
+
+
+
 func ClerkMiddleware() gin.HandlerFunc {
-	// Set Clerk secret key once
-	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+
 
 	return func(c *gin.Context) {
 		// Wrap Clerk’s middleware
@@ -23,21 +25,16 @@ func ClerkMiddleware() gin.HandlerFunc {
 		// Run Clerk auth check
 		handler.ServeHTTP(c.Writer, c.Request)
 
-		// If Clerk rejected request
-		if c.Writer.Status() == http.StatusUnauthorized {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Unauthorized 1",
-			})
-			return
-		}
+	
 
 		// Extract user claims
 		claims, ok := clerk.SessionClaimsFromContext(c.Request.Context())
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Unauthorized 2",
+				"message": "Clerk authorization failed!",
 			})
-			return
+				c.Abort();
+				return ;
 		}
 
 		// Save userId for later use in handlers

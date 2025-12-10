@@ -15,33 +15,45 @@ import (
 )
 
 func RoutingHandler(server *gin.Engine) {
+	server.GET("/health-check", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Success server is healthy",
+		})
 
+	})
 	// URL Shorten Endpoint //:PRIVATE
 	server.POST("/shorten", middleware.ClerkMiddleware(), middleware.RateLimiter, func(c *gin.Context) {
 
 		var url model.URL
 
 		// Get the long url from body
-
 		err := c.ShouldBindJSON(&url)
 
 		if err != nil || len(url.LongURL) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "Long URL is missing",
 			})
+			return
 		}
 
 		// Calling a function to shorten the URL
 
 		var userId = c.GetString("userId")
+		baseURL := utils.GetBaseURL(c)
 
-		err = url.ShortenURL(userId, url.ExpiredAT)
+		err = url.ShortenURL(userId, url.ExpiredAT, url.ShortCode, baseURL)
 
 		if err != nil {
+			fmt.Println(err);
+			if err.Error() == `pq: duplicate key value violates unique constraint "urls_shortcode_key"` {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": "Short code is already taken!",
+				})
+				return
+			}
 
-			fmt.Println(err)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Failed to generate short url. Try again!",
+				"message": "Something went wrong!",
 			})
 			return
 		}
@@ -54,13 +66,13 @@ func RoutingHandler(server *gin.Engine) {
 	})
 
 	// URL Redirect Endpoint  //:PUBLIC
-	server.GET("/u/:code", func(c *gin.Context) {
+	server.GET("/:code", func(c *gin.Context) {
 
 		// Extracting the short code
 		shortCode := c.Param("code")
 
 		// checking if the short code is empty or not of required length
-		if shortCode == "" || len(shortCode) != utils.SHORT_CODE_LENGTH {
+		if shortCode == "" || len(shortCode) < utils.SHORT_CODE_LENGTH {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "Invalid  url",
 			})
@@ -104,7 +116,6 @@ func RoutingHandler(server *gin.Engine) {
 		pageNumber, err := strconv.ParseInt(page, 10, 64)
 		pageLimit, err := strconv.ParseInt(limit, 10, 64)
 
-		
 		if err != nil || pageLimit < 5 {
 			pageLimit = 10
 		}
@@ -112,10 +123,12 @@ func RoutingHandler(server *gin.Engine) {
 			pageNumber = 1
 		}
 
-		resultedUrls, totalRecords, err := model.GetAllURLS(userId, pageNumber, pageLimit)
+		baseURL := utils.GetBaseURL(c)
+
+		resultedUrls, totalRecords, err := model.GetAllURLS(userId, pageNumber, pageLimit, baseURL)
 
 		if err != nil {
-			fmt.Println(err)
+
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Failed to fetch the stats",
 			})
@@ -129,6 +142,40 @@ func RoutingHandler(server *gin.Engine) {
 			"page":       pageNumber,
 			"limit":      pageLimit,
 			"totalPages": (totalRecords + pageLimit - 1) / pageLimit,
+		})
+
+	})
+
+
+	//URL Delete Endpoint //:PRIVATE
+
+	server.DELETE("/:code", middleware.ClerkMiddleware(), func(c *gin.Context) {
+
+		shortCode := c.Param("code")
+
+		if len(shortCode) < utils.SHORT_CODE_LENGTH {
+
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Invalid URL",
+			})
+
+			return
+
+		}
+
+		err := model.DeleteURL(shortCode)
+
+		if err != nil {
+				fmt.Println(err);
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Failed to delete the url",
+			})
+
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "URL is deleted successfully",
 		})
 
 	})

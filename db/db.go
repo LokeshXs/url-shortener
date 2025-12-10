@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -26,6 +27,11 @@ func InitDB() {
 	if err != nil {
 		panic(fmt.Sprintf("DB ping failed: %v", err))
 	}
+
+	// configuring the connections pool manager
+	db.SetMaxOpenConns(10); //Max connections if requests are more other have to wait
+	db.SetMaxIdleConns(5); //Max Idle connections which are ready to be used
+	db.SetConnMaxLifetime(time.Hour * 24); //After 24 hours the connection will be replaced with new one
 
 	// Assigning the db instance to global variable
 	DB = db
